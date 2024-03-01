@@ -4,7 +4,11 @@ defmodule Tram.StateMachineTest do
   test "tram state changing" do
     {:ok, _pid} = Tram.System.start_link()
 
-    assert Tram.StateMachine.get_state() == %{previous_state: nil, current_state: :unlaunched}
+    assert Tram.StateMachine.get_state() == %{
+             previous_state: nil,
+             current_state: :unlaunched
+           }
+
     assert Tram.StateMachine.on_transition({:unlaunched, :launched}) == :launched
     assert Tram.StateMachine.on_transition({:unlaunched, :launched}) == :already_launched
 

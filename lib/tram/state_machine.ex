@@ -16,40 +16,44 @@ defmodule Tram.StateMachine do
   end
 
   def on_transition({:unlaunched, :launched} = transition) do
-    %{current_state: current_state} = __MODULE__.get_state()
+    case current_tram_state() do
+      :launched ->
+        :already_launched
 
-    case current_state do
-      :launched -> :already_launched
-      _ -> GenServer.call(__MODULE__, transition)
+      _ ->
+        send_transition(transition)
     end
   end
 
   def on_transition({from_state, :moving} = transition)
       when from_state in [:stopped, :launched] do
-    %{current_state: current_state} = __MODULE__.get_state()
+    case current_tram_state() do
+      :moving ->
+        :already_moving
 
-    case current_state do
-      :moving -> :already_moving
-      _ -> GenServer.call(__MODULE__, transition)
+      _ ->
+        send_transition(transition)
     end
   end
 
   def on_transition({from_state, :stopped} = transition) when from_state in [:moving] do
-    %{current_state: current_state} = __MODULE__.get_state()
+    case current_tram_state() do
+      :stopped ->
+        :already_stopped
 
-    case current_state do
-      :stopped -> :already_stopped
-      _ -> GenServer.call(__MODULE__, transition)
+      _ ->
+        send_transition(transition)
     end
   end
 
   def on_transition({from_state, :unlaunched} = transition)
       when from_state in [:stopped, :launched] do
-    %{current_state: current_state} = __MODULE__.get_state()
+    case current_tram_state() do
+      :unlaunched ->
+        :already_unlaunched
 
-    case current_state do
-      :unlaunched -> :already_unlaunched
-      _ -> GenServer.call(__MODULE__, transition)
+      _ ->
+        send_transition(transition)
     end
   end
 
@@ -59,6 +63,15 @@ defmodule Tram.StateMachine do
 
   def get_state do
     GenServer.call(__MODULE__, :get_state)
+  end
+
+  defp current_tram_state do
+    %{current_state: current_state} = get_state()
+    current_state
+  end
+
+  defp send_transition(transition) do
+    GenServer.call(__MODULE__, transition)
   end
 
   @impl GenServer
