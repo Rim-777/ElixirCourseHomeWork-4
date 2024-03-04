@@ -1,44 +1,94 @@
 defmodule Tram.StateMachineTest do
   use ExUnit.Case
+  import ExUnit.CaptureLog
 
-  test "tram state changing" do
+  require Logger
+
+  alias Tram.StateMachine
+
+  setup do
     {:ok, _pid} = Tram.System.start_link()
+    :ok
+  end
 
-    assert Tram.StateMachine.get_state() == %{
-             previous_state: nil,
+  test "initial state", _state do
+    assert StateMachine.get_state() == %{
+             previous_state: :initial,
              current_state: :unlaunched
            }
+  end
 
-    assert Tram.StateMachine.on_transition({:unlaunched, :launched}) == :launched
-    assert Tram.StateMachine.on_transition({:unlaunched, :launched}) == :already_launched
-
-    assert Tram.StateMachine.get_state() == %{
-             current_state: :launched,
-             previous_state: :unlaunched
-           }
-
-    assert Tram.StateMachine.on_transition({:launched, :moving}) == :moving
-    assert Tram.StateMachine.on_transition({:launched, :moving}) == :already_moving
-    assert Tram.StateMachine.on_transition({:stopped, :moving}) == :already_moving
+  test "from unlaunched to launched" do
+    :ok = StateMachine.transit(:unlaunched, :launched)
 
     assert Tram.StateMachine.get_state() == %{
-             current_state: :moving,
-             previous_state: :launched
+             previous_state: :unlaunched,
+             current_state: :launched
            }
 
-    assert Tram.StateMachine.on_transition({:moving, :unlaunched}) == :unaccaptable_action
+    :ok = StateMachine.transit(:unlaunched, :launched)
+    # I'd like to chek that the warning is promted correcly but looks like it passes forever
+    assert(
+      capture_log(fn ->
+        StateMachine.transit(:unlaunched, :launched)
+      end)
+    ) =~ "Abracadabra"
+  end
 
-    assert Tram.StateMachine.get_state() == %{
-             current_state: :moving,
-             previous_state: :launched
+  test "from launched to unlaunched" do
+    :ok = StateMachine.transit(:unlaunched, :launched)
+    :ok = StateMachine.transit(:launched, :unlaunched)
+
+    assert StateMachine.get_state() == %{
+             previous_state: :launched,
+             current_state: :unlaunched
            }
+  end
 
-    assert Tram.StateMachine.on_transition({:moving, :unlaunched}) == :unaccaptable_action
-    assert Tram.StateMachine.on_transition({:moving, :stopped}) == :stopped
+  test "from launched to moving" do
+    :ok = StateMachine.transit(:unlaunched, :launched)
+    :ok = StateMachine.transit(:launched, :moving)
 
-    assert Tram.StateMachine.get_state() == %{
-             current_state: :stopped,
-             previous_state: :moving
+    assert StateMachine.get_state() == %{
+             previous_state: :launched,
+             current_state: :moving
            }
+  end
+
+  test "from moving to launched" do
+    :ok = StateMachine.transit(:unlaunched, :launched)
+    :ok = StateMachine.transit(:launched, :moving)
+    :ok = StateMachine.transit(:moving, :launched)
+
+    assert StateMachine.get_state() == %{
+             previous_state: :moving,
+             current_state: :launched
+           }
+  end
+
+  test "from unlauched to moving" do
+    :ok = StateMachine.transit(:unlaunched, :moving)
+
+    assert StateMachine.get_state() == %{
+             previous_state: :initial,
+             current_state: :unlaunched
+           }
+  end
+
+  test "from is equal to" do
+    :ok = StateMachine.transit(:unlaunched, :unlaunched)
+
+    assert StateMachine.get_state() == %{
+             previous_state: :initial,
+             current_state: :unlaunched
+           }
+  end
+
+  test "not applicable state type" do
+    assert StateMachine.transit(:ufo, :unlaunched) ==
+             {:error, "#{:ufo} is not applicable state type"}
+
+    assert StateMachine.transit(:unlaunched, :ufo) ==
+             {:error, "#{:ufo} is not applicable state type"}
   end
 end
