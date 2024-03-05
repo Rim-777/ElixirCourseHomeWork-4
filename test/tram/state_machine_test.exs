@@ -1,8 +1,5 @@
 defmodule Tram.StateMachineTest do
   use ExUnit.Case
-  import ExUnit.CaptureLog
-
-  require Logger
 
   alias Tram.StateMachine
 

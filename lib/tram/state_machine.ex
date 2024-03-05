@@ -17,6 +17,22 @@ defmodule Tram.StateMachine do
     {:ok, %{previous_state: :initial, current_state: :unlaunched}}
   end
 
+  def transit(:unlaunched, :launched) do
+    GenServer.cast(__MODULE__, {:transition, :unlaunched, :launched})
+  end
+
+  def transit(:launched, :unlaunched) do
+    GenServer.cast(__MODULE__, {:transition, :launched, :unlaunched})
+  end
+
+  def transit(:launched, :moving) do
+    GenServer.cast(__MODULE__, {:transition, :launched, :moving})
+  end
+
+  def transit(:moving, :launched) do
+    GenServer.cast(__MODULE__, {:transition, :moving, :launched})
+  end
+
   def transit(from, _to) when from not in @applicable_states do
     not_applicable_state_message(from)
   end
