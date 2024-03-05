@@ -25,14 +25,6 @@ defmodule Tram.StateMachineTest do
              previous_state: :unlaunched,
              current_state: :launched
            }
-
-    :ok = StateMachine.transit(:unlaunched, :launched)
-    # I'd like to chek that the warning is promted correcly but looks like it passes forever
-    assert(
-      capture_log(fn ->
-        StateMachine.transit(:unlaunched, :launched)
-      end)
-    ) =~ "Abracadabra"
   end
 
   test "from launched to unlaunched" do
@@ -45,7 +37,7 @@ defmodule Tram.StateMachineTest do
            }
   end
 
-  test "from launched to moving" do
+  test "from launched to mooving" do
     :ok = StateMachine.transit(:unlaunched, :launched)
     :ok = StateMachine.transit(:launched, :moving)
 

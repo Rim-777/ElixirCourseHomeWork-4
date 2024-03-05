@@ -8,7 +8,7 @@ defmodule Tram.StateMachine do
 
   @applicable_states [:initial, :unlaunched, :launched, :moving]
 
-  def start_link([]) do
+  def start_link(_args) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
@@ -39,33 +39,39 @@ defmodule Tram.StateMachine do
   @impl GenServer
   def handle_cast({:transition, from, to}, %{current_state: current} = state)
       when from != current do
-    Logger.warning("Requested transition #{from} → #{to} but current is #{current}")
+    Logger.error("Requested transition #{from} → #{to} but current is #{current}")
 
     {:noreply, state}
   end
 
   @impl GenServer
-  def handle_cast({:transition, from, to}, state) when to == from do
+  def handle_cast({:transition, from_to, from_to}, state) do
     Logger.warning("Stop raping the tram!!!")
 
     {:noreply, state}
   end
 
   @impl GenServer
-  def handle_cast({:transition, :unlaunched, :launched}, _state) do
+  def handle_cast({:transition, :unlaunched, :launched}, %{current_state: :unlaunched}) do
     new_state = %{previous_state: :unlaunched, current_state: :launched}
 
     {:noreply, new_state}
   end
 
   @impl GenServer
-  def handle_cast({:transition, :launched, to}, _state) when to in [:unlaunched, :moving] do
-    new_state = %{previous_state: :launched, current_state: to}
+  def handle_cast({:transition, :launched, :unlaunched}, %{current_state: :launched}) do
+    new_state = %{previous_state: :launched, current_state: :unlaunched}
     {:noreply, new_state}
   end
 
   @impl GenServer
-  def handle_cast({:transition, :moving, :launched}, _state) do
+  def handle_cast({:transition, :launched, :moving}, %{current_state: :launched}) do
+    new_state = %{previous_state: :launched, current_state: :moving}
+    {:noreply, new_state}
+  end
+
+  @impl GenServer
+  def handle_cast({:transition, :moving, :launched}, %{current_state: :moving}) do
     new_state = %{previous_state: :moving, current_state: :launched}
     {:noreply, new_state}
   end
